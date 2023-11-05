@@ -1,11 +1,12 @@
 const fs = require('fs/promises');
 const path = require('path');
 const crypto = require('crypto');
-const contactsPath = path.join(__dirname, "models", "contacts.json");
+const contactsPath = path.join(__dirname, "contacts.json");
 
 async function readContacts(){
   try {
     const data = await fs.readFile(contactsPath, { encoding: 'utf-8'});
+    console.log(data)
     return JSON.parse(data)
   } catch (error) {
     console.error('Error reading contacts:', error);
@@ -40,7 +41,7 @@ const removeContact = async (contactId) => {
     return null
   }
 
-  contacts.split(index, 1)
+  contacts.splice(index, 1)
   await writeContacts(contacts)
   return contacts;
 }
@@ -57,7 +58,8 @@ try {
   };
 
   contacts.push(newContacts);
-  return contacts;
+  await writeContacts(contacts)
+  return newContacts;
 } catch (error) {
   console.error(error);
   throw error;
@@ -68,21 +70,24 @@ const updateContact = async (contactId, body) => {
 try {
   const contacts = await readContacts();
   const index = contacts.findIndex((contact) => contact.id === contactId)
-  const {id, name, email, phone} = body
+  if (index !== -1) {
+    const { id, name, email, phone } = body;
 
-  const update = {
-   id,
-   name,
-   email,
-   phone
+    const update = {
+      id,
+      name,
+      email,
+      phone,
+    };
+
+    // Обновляем контакт в массиве
+    contacts[index] = update;
+    await writeContacts(contacts);
+
+    return update;
+  } else {
+    return null;
   }
-
-  if(index !== -1){
-    throw new Error('Контакт не найден');  // выбрасываем сообщение если контакт не найден
-  };
-
-  contacts[index] = update;  // Обновляем контакт в массиве
-  return update;  // Возвращаем обновленный контакт
 } catch (error) {
   console.error(error);
   throw error;
